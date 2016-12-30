@@ -1,0 +1,8 @@
+id,value
+nomDossier1,
+nomDossier1.nomDossier2,
+nomDossier1.nomDossier2.nomDossier3,
+nomDossier1.nomDossier2.nomDossier3.nomFichier1,100
+nomDossier1.nomDossier2.nomDossier3.nomFichier2,400
+nomDossier1.nomDossier2.nomDossier3.nomFichier3,500
+nomDossier1.nomDossier2.nomDossier3.nomFichier4,50
