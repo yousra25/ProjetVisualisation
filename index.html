@@ -1,12 +1,38 @@
-<html>
-<head>
-<meta charset="utf-8">
+<!DOCTYPE html>
+<meta charset="utf-8"> 
 <style>
 
-text {
+.node circle {
+  fill: #999;
+}
+
+.node text {
   font: 10px sans-serif;
 }
 
+.node--internal circle {
+  fill: #555;
+}
+
+.node--internal text {
+  text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+}
+  
+.link {
+  fill: none;
+  stroke: #555;
+  stroke-opacity: 0.4;
+  stroke-width: 1.5px;
+} 
+text {
+  font: 10px sans-serif;
+}
+g .youyou {
+  font: 15px sans-serif;
+}
+  .titre {
+  font: 60px sans-serif;
+}
 tspan:last-child {
   font-size: 9px;
   fill-opacity: 0.8;
@@ -19,18 +45,93 @@ tspan:last-child {
 .node--hover rect {
   stroke: #000;
 }
-
+.link {
+  fill: none;
+  stroke: #555;
+  stroke-opacity: 0.4;
+  stroke-width: 1.5px;
+}
 </style>
-</head>
-<body>
-<svg width="960" height="500"></svg>
-<script src="http://d3js.org/d3.v4.0.0-alpha.35.min.js" ></script>
+<svg width="965" height="460"></svg>
+<script src="//d3js.org/d3.v4.0.0-alpha.35.min.js"></script>
 <script>
+//http://www.w3schools.com/tags/ref_colornames.asp
 
 var svg = d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height");
+    width = +svg.attr("width")/2,
+    height = +svg.attr("height")/2;
+  
+var container1 = svg.append('g').attr("id","sommaire");  
+var svg1= d3.select("body").append("svg").attr("width", 960).attr("height", 150);
+  g1 = svg1.append("g").attr("transform", "translate(" + (width / 2 +200) + "," + (height / 2 + 500) + ")");
+    var texte = svg.append("text")
+    		.text("Fichiers d'un utilisateur")
+    		.attr('x',500)
+    		.attr('y',50)
+        .attr("class","titre")
+    		.attr("font-size", "50px")
+  			.attr("font-family","Times New Roman")      
+  			.attr("fill", "#2F4F4F");
 
+  var texte = container1.append("text")
+    		.text("Taille occupées par les différents types de fichier")
+    		.attr('x',600)
+    		.attr('y',50)
+        .attr("class","youyou")
+    		.attr("font-size", "20px")
+  			.attr("font-family","Times New Roman")      
+  			.attr("fill", "#2F4F4F");
+
+  
+var stratify1 = d3.stratify()
+    .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf(".")); });
+
+var tree = d3.tree()
+    .size([360, 500])
+    .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
+  
+  
+d3.csv("flare.csv", function(error, data) {
+  if (error) throw error;
+
+  var root = tree(stratify1(data));
+
+  var link = g1.selectAll(".link")
+    .data(root.descendants().slice(1))
+    .enter().append("path")
+      .attr("class", "link")
+      .attr("d", function(d) {
+        return "M" + project(d.x, d.y)
+            + "C" + project(d.x, (d.y + d.parent.y) / 2)
+            + " " + project(d.parent.x, (d.y + d.parent.y) / 2)
+            + " " + project(d.parent.x, d.parent.y);
+      });
+
+  var node = g1.selectAll(".node")
+    .data(root.descendants())
+    .enter().append("g")
+      .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
+      .attr("transform", function(d) { return "translate(" + project(d.x, d.y) + ")"; });
+
+  node.append("circle")
+      .attr("r", 2.5);
+
+  node.append("text")
+      .attr("dy", ".31em")
+      .attr("x", function(d) { return d.x < 180 === !d.children ? 6 : -6; })
+      .style("text-anchor", function(d) { return d.x < 180 === !d.children ? "start" : "end"; })
+      .attr("transform", function(d) { return "rotate(" + (d.x < 180 ? d.x - 90 : d.x + 90) + ")"; })
+      .text(function(d) { return d.id.substring(d.id.lastIndexOf(".") + 1); });
+});
+
+function project(x, y) {
+  var angle = (x - 90) / 180 * Math.PI, radius = y;
+  return [radius * Math.cos(angle), radius * Math.sin(angle)];
+}  
+  
+
+  
+  
 var format = d3.format(",d");
 
 var color = d3.scaleViridis()
@@ -40,13 +141,13 @@ var stratify = d3.stratify()
     .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf(".")); });
 
 var treemap = d3.treemap()
-    .size([width, height])
+    .size([600, height+220])
     .paddingOuter(3)
-    .paddingTop(19)
+    .paddingTop(5)
     .paddingInner(1)
     .round(true);
 
-d3.csv("test.csv", function(error, data) {
+d3.csv("dossiers", function(error, data) {
   if (error) throw error;
 
   var root = stratify(data)
@@ -69,7 +170,7 @@ d3.csv("test.csv", function(error, data) {
       .attr("id", function(d) { return "rect-" + d.id; })
       .attr("width", function(d) { return d.x1 - d.x0; })
       .attr("height", function(d) { return d.y1 - d.y0; })
-      .style("fill", function(d) { return color(d.depth); });
+      .style("fill", function(d) { return color2(d); });
 
   cell.append("clipPath")
       .attr("id", function(d) { return "clip-" + d.id; })
@@ -79,16 +180,16 @@ d3.csv("test.csv", function(error, data) {
   var label = cell.append("text")
       .attr("clip-path", function(d) { return "url(#clip-" + d.id + ")"; });
 
-  label
+  /*label
     .filter(function(d) { return d.children; })
     .selectAll("tspan")
       .data(function(d) { return d.id.substring(d.id.lastIndexOf(".") + 1).split(/(?=[A-Z][^A-Z])/g).concat("\xa0" + format(d.value)); })
     .enter().append("tspan")
       .attr("x", function(d, i) { return i ? null : 4; })
       .attr("y", 13)
-      .text(function(d) { return d; });
+      .text(function(d) { return d; });*/
 
-  label
+ /* label
     .filter(function(d) { return !d.children; })
     .selectAll("tspan")
       .data(function(d) { return d.id.substring(d.id.lastIndexOf(".") + 1).split(/(?=[A-Z][^A-Z])/g).concat(format(d.value)); })
@@ -96,7 +197,7 @@ d3.csv("test.csv", function(error, data) {
       .attr("x", 4)
       .attr("y", function(d, i) { return 13 + i * 10; })
       .text(function(d) { return d; });
-
+*/
   cell.append("title")
       .text(function(d) { return d.id + "\n" + format(d.value); });
 });
@@ -108,9 +209,52 @@ function hovered(hover) {
       .select("rect")
         .attr("width", function(d) { return d.x1 - d.x0 - hover; })
         .attr("height", function(d) { return d.y1 - d.y0 - hover; });
+    var dossiers=d.id.split("."); 
+    var dossier=" Le lien relatif : "
+    for (var i=0; i<dossiers.length; i++){
+      dossier+="/"+dossiers[i];
+    }
+     d3.select("#myText").remove();
+    container1.append("text")
+    		.text(dossier)
+    		.attr('x',10)
+    		.attr('y',460)
+        //.attr("class","youyou")
+    		.attr("id","mytext")
+    		.attr("font-size", "20px")
+  			.attr("font-family","Times New Roman")      
+  			.attr("fill", "#2F4F4F");  	
+  
+  
   };
 }
-
+function color2(d) {
+  //console.log(d.id); 
+  if (d.id.split("(")[1]=="pdf)")
+    return "#FFFACD"; 
+  else if (d.id.split("(")[1]=="txt)")
+  	return "#D19275";//"#DEB887"; 
+  else if (d.id.split("(")[1]=="png)")
+  	return "#ffd014";
+  else if (d.id.split("(")[1]=="jpg)")
+  	return "#8FBC8F"; 
+  else if (d.id.split("(")[1]=="mp4)")
+  	return "#e5c319";
+  else if (d.id.split("(")[1]=="jar)")
+  	return "#f1d688";
+  else if (d.id.split("(")[1]=="zip)")
+  	return "#DCDCDC";
+    else if (d.id.split("(")[1]=="csv)")
+  	return "#FFD700";
+  else if (d.id.split("(")[1]=="json)" || d.id.split("(")[1]=="geojson)")
+  	return "#f1d688";
+  else if (d.id.split("(")[1]=="pptx)")
+  	return "#FFE4C4";
+  else if (d.id.split("(")[1]=="pptm)")
+  	return "#FFE4C4";
+  else if (d.id.split("(")[1]=="docx)")
+  	return "#CD5C5C";
+  else return color(d.depth);
+  
+}   
 </script>
-</body>
-</html>
