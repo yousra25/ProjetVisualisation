@@ -4,18 +4,34 @@
 
 <style>
 
+  
+ .toolTip {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        position: absolute;
+        display: none;
+        width: auto;
+        height: auto;
+        background: none repeat scroll 0 0 white;
+        border: 0 none;
+        border-radius: 8px 8px 8px 8px;
+        box-shadow: -3px 3px 15px #888888;
+        color: black;
+        font: 12px sans-serif;
+        padding: 5px;
+        text-align: center;
+    }
+  
+  
+  
 .node circle {
   fill: #999;
 }
-
 .node text {
   font: 10px sans-serif;
 }
-
 .node--internal circle {
   fill: #555;
 }
-
 .node--internal text {
   text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
 }
@@ -32,6 +48,13 @@ text {
 g .youyou {
   font: 15px sans-serif;
 }
+.lien {
+  font: 13px sans-serif;
+}
+.legende {
+  font: 13px sans-serif;
+  color:#C0C0C0;
+}
   .titre {
   font: 60px sans-serif;
 }
@@ -39,11 +62,9 @@ tspan:last-child {
   font-size: 9px;
   fill-opacity: 0.8;
 }
-
 .node rect {
   shape-rendering: crispEdges;
 }
-
 .node--hover rect {
   stroke: #000;
 }
@@ -56,50 +77,64 @@ tspan:last-child {
 </style>
 </head>
 <body>
-<svg width="965" height="460"></svg>
+<svg width="965" height="650"></svg>
 <script src="//d3js.org/d3.v4.0.0-alpha.35.min.js"></script>
-<script>
-//http://www.w3schools.com/tags/ref_colornames.asp
 
-var svg = d3.select("svg"),
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+  
+   var div = d3.select("body").append("div").attr("class", "toolTip");
+  
+  var svg = d3.select("svg"),
     width = +svg.attr("width")/2,
     height = +svg.attr("height")/2;
+ 
+
+ g2 = svg.append("g").attr("transform", "translate(" + (0) + "," + (100) + ")"); 
   
+  svg.call(d3.zoom()
+    .scaleExtent([100, 100])
+    .on("zoom", zoomed));
+
+function zoomed() {
+  g1.attr("transform", d3.event.transform);
+}
+
 var container1 = svg.append('g').attr("id","sommaire");  
-var svg1= d3.select("body").append("svg").attr("width", 960).attr("height", 150);
-  g1 = svg1.append("g").attr("transform", "translate(" + (width / 2 +200) + "," + (height / 2 + 500) + ")");
+var svg1= d3.select("body").append("svg").attr("width", 960).attr("height", 1500);
+  g1 = svg1.append("g").attr("transform", "translate(" + (width / 2 +200) + "," + (500) + ")");
     var texte = svg.append("text")
-    		.text("Fichiers d'un utilisateur")
-    		.attr('x',500)
+    		.text("Fichiers d'un utilisateur (Windows)")
+    		.attr('x',10)
     		.attr('y',50)
         .attr("class","titre")
     		.attr("font-size", "50px")
   			.attr("font-family","Times New Roman")      
   			.attr("fill", "#2F4F4F");
-
   var texte = container1.append("text")
-    		.text("Taille occupées par les différents types de fichier")
-    		.attr('x',600)
-    		.attr('y',50)
+    		.text("Espace total occupé par chaque types de fichier")
+    		.attr('x',610)
+    		.attr('y',150)
         .attr("class","youyou")
     		.attr("font-size", "20px")
   			.attr("font-family","Times New Roman")      
   			.attr("fill", "#2F4F4F");
-
   
 var stratify1 = d3.stratify()
     .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf(".")); });
-
 var tree = d3.tree()
     .size([360, 500])
     .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
+ 
+
+//********************************************************************* 
+d3.csv("dossiers", function(error, data) {
   
-  
-d3.csv("flare.csv", function(error, data) {
   if (error) throw error;
 
-  var root = tree(stratify1(data));
 
+  var root = tree(stratify1(data));
   var link = g1.selectAll(".link")
     .data(root.descendants().slice(1))
     .enter().append("path")
@@ -110,16 +145,13 @@ d3.csv("flare.csv", function(error, data) {
             + " " + project(d.parent.x, (d.y + d.parent.y) / 2)
             + " " + project(d.parent.x, d.parent.y);
       });
-
   var node = g1.selectAll(".node")
     .data(root.descendants())
     .enter().append("g")
       .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
       .attr("transform", function(d) { return "translate(" + project(d.x, d.y) + ")"; });
-
   node.append("circle")
       .attr("r", 2.5);
-
   node.append("text")
       .attr("dy", ".31em")
       .attr("x", function(d) { return d.x < 180 === !d.children ? 6 : -6; })
@@ -127,87 +159,156 @@ d3.csv("flare.csv", function(error, data) {
       .attr("transform", function(d) { return "rotate(" + (d.x < 180 ? d.x - 90 : d.x + 90) + ")"; })
       .text(function(d) { return d.id.substring(d.id.lastIndexOf(".") + 1); });
 });
-
+  
 function project(x, y) {
   var angle = (x - 90) / 180 * Math.PI, radius = y;
   return [radius * Math.cos(angle), radius * Math.sin(angle)];
 }  
   
-
   
   
 var format = d3.format(",d");
-
-var color = d3.scaleViridis()
+var color = d3.scaleMagma()
     .domain([-4, 4]);
-
 var stratify = d3.stratify()
     .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf(".")); });
-
 var treemap = d3.treemap()
     .size([600, height+220])
-    .paddingOuter(3)
+    .paddingOuter(10)
     .paddingTop(5)
     .paddingInner(1)
     .round(true);
-
 d3.csv("dossiers", function(error, data) {
   if (error) throw error;
-
   var root = stratify(data)
       .sum(function(d) { return d.value; })
       .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
-
   treemap(root);
-
-  var cell = svg
+  var cell = g2
     .selectAll(".node")
     .data(root.descendants())
     .enter().append("g")
       .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; })
       .attr("class", "node")
       .each(function(d) { d.node = this; })
+  
       .on("mouseover", hovered(true))
       .on("mouseout", hovered(false));
-
   cell.append("rect")
       .attr("id", function(d) { return "rect-" + d.id; })
       .attr("width", function(d) { return d.x1 - d.x0; })
       .attr("height", function(d) { return d.y1 - d.y0; })
       .style("fill", function(d) { return color2(d); });
-
   cell.append("clipPath")
       .attr("id", function(d) { return "clip-" + d.id; })
     .append("use")
       .attr("xlink:href", function(d) { return "#rect-" + d.id + ""; });
-
   var label = cell.append("text")
       .attr("clip-path", function(d) { return "url(#clip-" + d.id + ")"; });
-
-  /*label
-    .filter(function(d) { return d.children; })
-    .selectAll("tspan")
-      .data(function(d) { return d.id.substring(d.id.lastIndexOf(".") + 1).split(/(?=[A-Z][^A-Z])/g).concat("\xa0" + format(d.value)); })
-    .enter().append("tspan")
-      .attr("x", function(d, i) { return i ? null : 4; })
-      .attr("y", 13)
-      .text(function(d) { return d; });*/
-
- /* label
-    .filter(function(d) { return !d.children; })
-    .selectAll("tspan")
-      .data(function(d) { return d.id.substring(d.id.lastIndexOf(".") + 1).split(/(?=[A-Z][^A-Z])/g).concat(format(d.value)); })
-    .enter().append("tspan")
-      .attr("x", 4)
-      .attr("y", function(d, i) { return 13 + i * 10; })
-      .text(function(d) { return d; });
-*/
   cell.append("title")
       .text(function(d) { return d.id + "\n" + format(d.value); });
 });
+   //*********************************************************************
+ var  result = [{clé:"pdf)", valeur:0}, {clé:"txt)", valeur:0}, {clé:"png)", valeur: 0},{clé:"mp4)", valeur:0}, {clé:"jar)", valeur:0}, {clé:"zip)", valeur: 0},{clé:"csv)", valeur:0}, {clé:"json)", valeur:0}, {clé:"pptx)", valeur: 0},{clé:"pdf)", valeur:0}, {clé:"docx", valeur:0}];
 
-function hovered(hover) {
+  
+  
+d3.csv("dossiers", function(error, data) {
+  
+  if (error) throw error;
+ 
+  
+ var types = ["pdf)", "txt)","png)","jpg)", "mp4)","jar)","zip)","csv)","json","pptx","docx)"];
+toString =JSON.stringify(types);
+  for (var i=0; i<data.length; i++){
+
+    
+   if (!(typeof data[i].value === "undefined")){
+     type=data[i].id.split("(")[1]; 
+
+      switch (type) { 
+      case "pdf)": 
+         // console.log(data[i].value);
+        result[0].valeur+=+data[i].value;
+        break;
+      case "txt)":
+                result[1].valeur+=+data[i].value;
+        break;
+      case "png)":
+                result[2].valeur+=+data[i].value;
+        break;
+      case "jpg)":
+                result[3].valeur+=+data[i].value;
+        break;
+      case "mp4)":
+          result[4].valeur+=+data[i].value;
+        break;
+       case "jar)":
+          result[5].valeur+=+data[i].value;
+        break;
+         case "zip)":
+          result[6].valeur+=+data[i].value;
+        break;
+                case "csv)":
+          result[7].valeur+=+data[i].value;
+        break;
+                case "json)":
+          result[8].valeur+=+data[i].value;
+        break;
+                case "pptx)":
+          result[9].valeur+=+data[i].value;
+        break;
+                case "docx)":
+          result[10].valeur+=+data[i].value;
+        break;
+
+      default:
+   
+    }
+     
+   }
+  }
+  //"pdf)", "txt)","png)","jpg)", "mp4)","jar)","zip)","csv)","json","pptx","docx)"
+  data = [{cat:"pdf)",value:result[0].valeur},{cat:"txt)",value:result[1].valeur},
+         {cat:"png)",value:result[2].valeur},{cat:"jpg)",value:result[3].valeur},
+         {cat:"mp4)",value:result[4].valeur},{cat:"jar)",value:result[5].valeur},
+         {cat:"zip)",value:result[6].valeur},{cat:"csv)",value:result[7].valeur},
+         {cat:"json)",value:result[8].valeur},{cat:"pptx)",value:result[9].valeur},
+         {cat:"docx)",value:result[10].valeur}];
+  
+  var bars=container1.selectAll("rect")
+	.data(data)
+	.enter()
+		.append("rect")
+			.attr("width", function(d){ console.log(d.value);  return d.value/1000000;})
+			.attr("height", 40)
+		  .attr("x", 700)  
+			.attr("y", function(i,j){return j*50 +200;})
+			.attr("fill", function(d){console.log(d.cat); return colorBar(d.cat); });
+ 
+  container1.append("text").text("pdf").attr('x',660).attr('y',230).attr("class","legende");
+container1.append("text").text("txt").attr('x',660).attr('y',280).attr("class","legende");
+container1.append("text").text("png").attr('x',660).attr('y',330).attr("class","legende");
+container1.append("text").text("jpg").attr('x',660).attr('y',380).attr("class","legende");
+container1.append("text").text("jar").attr('x',660).attr('y',430).attr("class","legende");
+container1.append("text").text("zip").attr('x',660).attr('y',480).attr("class","legende");
+container1.append("text").text("csv").attr('x',660).attr('y',530).attr("class","legende");
+container1.append("text").text("json").attr('x',660).attr('y',580).attr("class","legende");
+container1.append("text").text("pptx)").attr('x',660).attr('y',630).attr("class","legende");         container1.append("text").text("docx").attr('x',660).attr('y',680).attr("class","legende");
+     
+});
+
+ 
+
+ 
+  
+ //*********************************************************************  
+
+
+  
+  function hovered(hover) {
   return function(d) {
+    //div.style("display", "none");
     d3.selectAll(d.ancestors().map(function(d) { return d.node; }))
         .classed("node--hover", hover)
       .select("rect")
@@ -222,16 +323,50 @@ function hovered(hover) {
     container1.append("text")
     		.text(dossier)
     		.attr('x',10)
-    		.attr('y',460)
-        //.attr("class","youyou")
+    		.attr('y',85)
+        .attr("class","lien")
     		.attr("id","mytext")
     		.attr("font-size", "20px")
   			.attr("font-family","Times New Roman")      
   			.attr("fill", "#2F4F4F");  	
-  
-  
+      /* div.style("left", d3.event.pageX+10+"px");
+                div.style("top", d3.event.pageY-25+"px");
+                div.style("display", "inline-block");
+                div.html((d.id)+"<br>"+(d.value));*/
   };
+     
+   
+          
 }
+  
+function  colorBar(d) {
+  //console.log(d.id); 
+  if (d=="pdf)")
+    return "#FFFACD"; 
+  else if (d=="txt)")
+  	return "#D19275";//"#DEB887"; 
+  else if (d=="png)")
+  	return "#ffd014";
+  else if (d=="jpg)")
+  	return "#8FBC8F"; 
+  else if (d=="mp4)")
+  	return "#e5c319";
+  else if (d=="jar)")
+  	return "#f1d688";
+  else if (d=="zip)")
+  	return "#DCDCDC";
+    else if (d=="csv)")
+  	return "#FFD700";
+  else if (d=="json)" || d.id=="geojson)")
+  	return "#f1d688";
+  else if (d=="pptx)")
+  	return "#FFE4C4";
+  else if (d=="pptm)")
+  	return "#FFE4C4";
+  else if (d=="docx)")
+  	return "#CD5C5C";
+  
+}   
 function color2(d) {
   //console.log(d.id); 
   if (d.id.split("(")[1]=="pdf)")
@@ -261,6 +396,7 @@ function color2(d) {
   else return color(d.depth);
   
 }   
+  
 </script>
 </body>
 </html>
